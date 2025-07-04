@@ -9,9 +9,15 @@ class TokenSSOGuard extends Adapter implements Guard
 {
 
     public function getLoginUrl(){
-        $loginUrl = get_option('my_sso_login_url');
-        $clientId = get_option('my_sso_client_id');
-        return replacePlaceholders($loginUrl, ['clientId' => $clientId]);
+        $loginUrl  = $this->config['login_url'] ?? '';
+        $clientId  = $this->config['client_id'] ?? '';
+        $redirect  = $this->getRedirectUrl();
+        $state     = $this->getState();
+        return replacePlaceholders($loginUrl, [
+            'clientId'    => $clientId,
+            'redirectUri' => rawurlencode($redirect),
+            'state'       => $state,
+        ]);
     }
     public function check(): bool
     {
@@ -30,7 +36,10 @@ class TokenSSOGuard extends Adapter implements Guard
     }
 
 
-    public function user() {}
+    public function user() {
+        $user = wp_get_current_user();
+        return ($user && $user->ID) ? $user : null;
+    }
 
     public function login($user)
     {
@@ -46,6 +55,7 @@ class TokenSSOGuard extends Adapter implements Guard
             delete_user_meta($user->ID, 'sso_access_token');
             delete_user_meta($user->ID, 'sso_refresh_token');
             delete_user_meta($user->ID, 'sso_expires_at');
+            $this->revokeToken($user);
         }
 
         wp_logout();
@@ -55,18 +65,23 @@ class TokenSSOGuard extends Adapter implements Guard
 
     public function attempt(array $credential)
     {
-        $api_url = get_option('my_sso_validate_url');
-        $clientId = get_option('my_sso_client_id');
+        $api_url = $this->config['validate_url'] ?? '';
+        $clientId = $this->config['client_id'] ?? '';
+
+        if(isset($credential['state']) && !$this->verifyState($credential['state'])){
+            return false;
+        }
 
         appLogger(json_encode($credential));
         // Exchange code for token
         $response = wp_remote_post($api_url, [
             'body' => [
-                'grant_type' => 'authorization_code',
-                'client_id' => $clientId,
-                'scope' => 'openid profile',
-                'code' => $credential['code'],
-                'session_state'=>$credential['code'],
+                'grant_type'   => 'authorization_code',
+                'client_id'    => $clientId,
+                'scope'        => 'openid profile',
+                'code'         => $credential['code'],
+                'redirect_uri' => $this->getRedirectUrl(),
+                'state'        => $credential['state'] ?? '',
             ],
         ]);
 
@@ -133,7 +148,7 @@ class TokenSSOGuard extends Adapter implements Guard
         }
 
         $this->login($user);
-
+        $this->getUserInfo($user);
 
         return $user;
     }
@@ -145,8 +160,8 @@ class TokenSSOGuard extends Adapter implements Guard
             return false;
         }
 
-        $validateUrl = get_option('my_sso_validate_url');
-        $clientId = get_option('my_sso_client_id');
+        $validateUrl = $this->config['validate_url'] ?? '';
+        $clientId   = $this->config['client_id'] ?? '';
         $response = wp_remote_post($validateUrl, [
             'body' => [
                 'grant_type' => 'refresh_token',
@@ -177,7 +192,76 @@ class TokenSSOGuard extends Adapter implements Guard
             return null;
         }
 
-        $payload = base64_decode(strtr($parts[1], '-_', '+/'));
+        $header    = json_decode(base64_decode(strtr($parts[0], '-_', '+/')), true);
+        $payload   = base64_decode(strtr($parts[1], '-_', '+/'));
+        $signature = base64_decode(strtr($parts[2], '-_', '+/'));
+
+        if (!empty($this->config['public_key'])) {
+            $data  = $parts[0] . '.' . $parts[1];
+            $pub   = openssl_pkey_get_public($this->config['public_key']);
+            if (!$pub || openssl_verify($data, $signature, $pub, OPENSSL_ALGO_SHA256) !== 1) {
+                return null;
+            }
+        }
+
         return json_decode($payload, true);
+    }
+
+    public function getRedirectUrl()
+    {
+        return $this->config['redirect_url'] ?? home_url();
+    }
+
+    public function getState()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $state = wp_generate_password(12, false);
+        $_SESSION['sso_state'] = $state;
+        return $state;
+    }
+
+    public function verifyState($state)
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return isset($_SESSION['sso_state']) && hash_equals($_SESSION['sso_state'], $state);
+    }
+
+    public function getUserInfo($user)
+    {
+        $url = $this->config['user_info_url'] ?? '';
+        if (!$url) {
+            return null;
+        }
+        $token = get_user_meta($user->ID, 'sso_access_token', true);
+        $response = wp_remote_get($url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+            ],
+        ]);
+        if (is_wp_error($response)) {
+            return null;
+        }
+        return json_decode(wp_remote_retrieve_body($response), true);
+    }
+
+    public function revokeToken($user)
+    {
+        $logoutUrl = $this->config['logout_url'] ?? '';
+        if (!$logoutUrl) {
+            return;
+        }
+        $token = get_user_meta($user->ID, 'sso_refresh_token', true);
+        if (!$token) {
+            return;
+        }
+        wp_remote_post($logoutUrl, [
+            'body' => [
+                'token' => $token,
+            ],
+        ]);
     }
 }
