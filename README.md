@@ -1,36 +1,45 @@
-# Yekta WordPress Plugin
+# افزونه وردپرس یکتا
 
-This plugin integrates Yekta SSO authentication with WordPress.
-It provides a token-based login adapter and a simple admin interface for configuring SSO endpoints.
+این افزونه امکان اتصال سامانه Single Sign-On (SSO) یکتا به وردپرس را فراهم می‌کند. پس از فعال‌سازی می‌توانید تنظیمات سرویس را در بخش «تنظیمات SSO» انجام دهید.
 
-## Installation
+## نصب
 
-1. Copy or clone the plugin folder into `wp-content/plugins/sso-wp` so that `sso-wp.php` is located directly inside the directory.
-2. (Optional) Launch the provided Docker setup for a local test environment using:
+1. پوشه افزونه را در مسیر `wp-content/plugins/sso-wp` کپی کنید به طوری که فایل `sso-wp.php` مستقیماً داخل آن قرار گیرد.
+2. (اختیاری) برای راه‌اندازی محیط تست محلی می‌توانید از Docker استفاده کنید:
    ```bash
    docker compose up
    ```
-3. Activate **Yekta** from the WordPress **Plugins** page.
+3. سپس افزونه **یکتا** را از بخش **Plugins** فعال کنید.
 
-## Configuring SSO
+## تنظیمات
 
-After activation a new **SSO Settings** page appears under **Settings**. Fill in the following fields:
+در منوی مدیریت وردپرس صفحه‌ای با عنوان «تنظیمات SSO» افزوده می‌شود. فیلدهای زیر را بر اساس اطلاعات سرویس دهنده پر کنید:
 
-1. **Client ID** – OAuth client identifier for the authorization code flow.
-2. **Login URL** – authorization endpoint of the SSO provider.
-3. **Validate URL** – endpoint used to exchange the authorization code for tokens.
-4. **Token Endpoint URL** – password or client credentials token endpoint.
-5. **Secret Key** – the client secret for your SSO provider.
-6. **Redirect URL** – where users should be redirected once authenticated.
-7. **Logout URL** – optional single logout endpoint.
-8. **Public Key** – RSA public key used to verify JWT signatures.
-9. **User Info URL** – endpoint returning additional profile information.
+1. شناسه کلاینت
+2. آدرس ورود
+3. آدرس اعتبارسنجی
+4. آدرس دریافت توکن
+5. کلید مخفی
+6. آدرس بازگشت پس از ورود
+7. آدرس خروج
+8. کلید عمومی
+9. آدرس اطلاعات کاربر
 
-Save the changes to update the stored options.
+با ذخیره تنظیمات مقادیر در وردپرس ذخیره می‌شوند.
 
-## Adapter settings
+## مدیریت کاربران
 
-Underlying SSO behaviour is configured in `src/configs/adapters.php`. Three guards are available (`token`, `password` and `secret`). The default adapter is token based and defined as:
+صفحه دیگری با عنوان «کاربران SSO» در منو ایجاد شده است. در این صفحه تمام کاربرانی که دارای فیلد `sso_global_id` هستند با صفحه‌بندی بیست‌تایی نمایش داده می‌شوند. بالای صفحه آمار امروز شامل تعداد ورودها و کاربران جدید مشاهده می‌شود.
+
+با کلیک روی دکمه «نمایش اطلاعات» مقابل هر کاربر، جزئیات تکمیلی کاربر از آدرس `User Info URL` خوانده شده و در یک پنجره کوچک نمایش داده می‌شود.
+
+## ثبت رویدادها
+
+هنگام فعال‌سازی افزونه، جدولی با نام `yekta_audit` در پایگاه داده ساخته می‌شود که شامل ستون‌های `id`، `user_id`، `type`، `created_at` و `params` است. ورود و ایجاد کاربران در این جدول ثبت می‌شود و برای نمایش آمار در صفحه کاربران استفاده می‌شود.
+
+## تغییر آداپتور
+
+پیکربندی نگهدارنده ورود در فایل `src/configs/adapters.php` قرار دارد. سه روش `token`، `password` و `secret` وجود دارد که می‌توانید مقدار پیش‌فرض را تغییر دهید.
 
 ```php
 return [
@@ -50,16 +59,4 @@ return [
 ];
 ```
 
-To introduce another SSO provider, add a new context to the `contexts` array and change the `default` key. Example:
-
-```php
-'another' => [
-    'context'       => Kernel\Auth\Guards\TokenSSOGuard::class,
-    'login_url'     => get_option('another_login_url'),
-    'client_id'     => get_option('another_client_id'),
-    'validate_url'  => get_option('another_validate_url'),
-    'redirect_url'  => get_option('another_redirect_url'),
-],
-```
-
-Set `'default' => 'another'` to make it active.
+در صورت نیاز می‌توانید کانتکست جدیدی افزوده و مقدار `default` را تغییر دهید.

@@ -76,3 +76,16 @@ if(!function_exists('get_sso_user_id')){
     }
 }
 
+
+if(!function_exists('yekta_audit_log')){
+    function yekta_audit_log($user_id, $type, $params = null){
+        global $wpdb;
+        $table = $wpdb->prefix . 'yekta_audit';
+        $wpdb->insert($table,[
+            'user_id' => $user_id,
+            'type' => $type,
+            'params' => $params ? wp_json_encode($params) : null,
+            'created_at' => current_time('mysql')
+        ]);
+    }
+}
