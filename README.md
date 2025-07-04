@@ -16,7 +16,7 @@ It provides a token-based login adapter and a simple admin interface for configu
 
 After activation a new **SSO Settings** page appears under **Settings**. Fill in the following fields:
 
-1. **Client ID** – OAuth client identifier.
+1. **Client ID** – OAuth client identifier for the authorization code flow.
 2. **Login URL** – authorization endpoint of the SSO provider.
 3. **Validate URL** – endpoint used to exchange the authorization code for tokens.
 4. **Token Endpoint URL** – password or client credentials token endpoint.
@@ -30,20 +30,20 @@ Save the changes to update the stored options.
 
 ## Adapter settings
 
-Underlying SSO behaviour is configured in `src/configs/adapters.php`. The default adapter is token based and defined as:
+Underlying SSO behaviour is configured in `src/configs/adapters.php`. Three guards are available (`token`, `password` and `secret`). The default adapter is token based and defined as:
 
 ```php
 return [
     'auth' => [
         'default' => 'sso',
         'contexts' => [
-            'sso' => [
+            'token' => [
                 'context'       => Kernel\Auth\Guards\TokenSSOGuard::class,
-                'login_url'     => get_option('my_sso_login_url'),
-                'client_id'     => get_option('my_sso_client_id'),
-                'validate_url'  => get_option('my_sso_validate_url'),
-                'redirect_url'  => get_option('my_sso_redirect_url'),
-                'public_key'    => get_option('my_sso_public_key'),
+                'login_url'     => get_option('yekta_sso_token_guard_login_url'),
+                'client_id'     => get_option('yekta_sso_token_guard_client_id'),
+                'validate_url'  => get_option('yekta_sso_token_guard_validate_url'),
+                'redirect_url'  => get_option('yekta_sso_token_guard_redirect_url'),
+                'public_key'    => get_option('yekta_sso_token_guard_public_key'),
             ]
         ]
     ],
