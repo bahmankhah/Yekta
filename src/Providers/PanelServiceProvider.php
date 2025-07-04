@@ -34,6 +34,8 @@ class PanelServiceProvider
         });
         Wordpress::action('admin_init',function(){
             register_setting('yekta_sso_options_group', 'yekta_sso_method', ['sanitize_callback' => 'sanitize_text_field']);
+            register_setting('yekta_sso_options_group', 'yekta_sso_login_param', ['sanitize_callback' => 'sanitize_text_field']);
+            register_setting('yekta_sso_options_group', 'yekta_sso_code_param', ['sanitize_callback' => 'sanitize_text_field']);
 
             register_setting('yekta_sso_options_group', 'yekta_sso_token_guard_client_id', ['sanitize_callback' => 'sanitize_text_field']);
             register_setting('yekta_sso_options_group', 'yekta_sso_token_guard_login_url', ['sanitize_callback' => 'esc_url_raw']);
