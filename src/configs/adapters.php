@@ -3,9 +3,9 @@
 return [
 
     'auth' => [
-        'default' => 'sso',
+        'default' => 'token',
         'contexts' => [
-            'sso' => [
+            'token' => [
                 'context'       => Kernel\Auth\Guards\TokenSSOGuard::class,
                 'login_url'     => get_option('my_sso_login_url'),
                 'client_id'     => get_option('my_sso_client_id'),

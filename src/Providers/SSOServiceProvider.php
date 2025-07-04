@@ -21,7 +21,7 @@ class SSOServiceProvider
 
     public function boot()
     {
-        $method = get_option('my_sso_method', appConfig('adapters.auth.default', 'sso'));
+        $method = get_option('my_sso_method', appConfig('adapters.auth.default', 'token'));
         $guard  = call_user_func([Auth::class, $method]);
 
         if (strpos($_SERVER['REQUEST_URI'], '?login=true') !== false && !is_user_logged_in()) {
