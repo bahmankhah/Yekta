@@ -4,8 +4,9 @@
             <?php settings_fields('my_sso_options_group'); ?>
             <?php do_settings_sections('my_sso_options_group'); ?>
             <table class="form-table">
+
                 <tr valign="top">
-                    <th scope="row">SSO Method</th>
+                  
                     <td>
                         <select id="my_sso_method" name="my_sso_method">
                             <option value="oauth" <?php selected(get_option('my_sso_method'), 'oauth'); ?>>OAuth 2.0</option>
