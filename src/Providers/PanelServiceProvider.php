@@ -25,6 +25,7 @@ class PanelServiceProvider
             register_setting('my_sso_options_group', 'my_sso_token_endpoint');
             register_setting('my_sso_options_group', 'my_sso_secret_key');
             register_setting('my_sso_options_group', 'my_sso_redirect_url');
+            register_setting('my_sso_options_group', 'my_sso_method');
         });
     }
 }

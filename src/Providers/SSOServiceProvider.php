@@ -21,19 +21,22 @@ class SSOServiceProvider
 
     public function boot()
     {
+        $method = get_option('my_sso_method', appConfig('adapters.auth.default', 'sso'));
+        $guard = call_user_func([Auth::class, $method]);
+
         if (strpos($_SERVER['REQUEST_URI'], '?login=true') !== false && !is_user_logged_in()) {
-            wp_redirect(Auth::sso()->getLoginUrl()); 
+            wp_redirect($guard->getLoginUrl());
             exit;
         }
         if (isset($_GET['code'])) {
             appLogger($_GET['code']);
-            Auth::sso()->attempt(['code'=>$_GET['code']]);
+            $guard->attempt(['code'=>$_GET['code']]);
             $this->remove_code_param_redirect();
         }
 
-        Wordpress::filter('login_url', function ($login_url, $redirect, $force_reauth) {
+        Wordpress::filter('login_url', function ($login_url, $redirect, $force_reauth) use ($guard) {
             appLogger('setting login url');
-            return Auth::sso()->getLoginUrl();
+            return $guard->getLoginUrl();
         }, 1, 3);
         Wordpress::action('wp_logout', function(){
             wp_safe_redirect( home_url() );

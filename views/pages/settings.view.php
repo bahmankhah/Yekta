@@ -5,6 +5,10 @@
             <?php do_settings_sections('my_sso_options_group'); ?>
             <table class="form-table">
                 <tr valign="top">
+                    <th scope="row">SSO Method</th>
+                    <td><input type="text" name="my_sso_method" value="<?php echo esc_attr(get_option('my_sso_method')); ?>" style="width: 100%;"/></td>
+                </tr>
+                <tr valign="top">
                     <th scope="row">Token Endpoint URL</th>
                     <td><input type="text" name="my_sso_token_endpoint" value="<?php echo esc_attr(get_option('my_sso_token_endpoint')); ?>" style="width: 100%;"/></td>
                 </tr>
