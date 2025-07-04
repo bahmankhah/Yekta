@@ -22,8 +22,11 @@ class PanelServiceProvider
                 );
         });
         Wordpress::action('admin_init',function(){
-            register_setting('my_sso_options_group', 'my_sso_token_endpoint');
+            register_setting('my_sso_options_group', 'my_sso_method');
+            register_setting('my_sso_options_group', 'my_sso_client_id');
+            register_setting('my_sso_options_group', 'my_sso_login_url');
             register_setting('my_sso_options_group', 'my_sso_secret_key');
+            register_setting('my_sso_options_group', 'my_sso_token_endpoint');
             register_setting('my_sso_options_group', 'my_sso_redirect_url');
             register_setting('my_sso_options_group', 'my_sso_method');
         });
