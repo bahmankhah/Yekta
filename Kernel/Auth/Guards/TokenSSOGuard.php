@@ -5,11 +5,13 @@ namespace Kernel\Auth\Guards;
 use Kernel\Adapters\Adapter;
 use Kernel\Contracts\Auth\Guard;
 
-class SSOGuard extends Adapter implements Guard
+class TokenSSOGuard extends Adapter implements Guard
 {
 
     public function getLoginUrl(){
-        return replacePlaceholders($this->config['login_url'], ['clientId'=>$this->config['client_id']]);
+        $loginUrl = get_option('my_sso_login_url');
+        $clientId = get_option('my_sso_client_id');
+        return replacePlaceholders($loginUrl, ['clientId' => $clientId]);
     }
     public function check(): bool
     {
@@ -53,8 +55,8 @@ class SSOGuard extends Adapter implements Guard
 
     public function attempt(array $credential)
     {
-        $api_url = $this->config['validate_url'];
-        $clientId = $this->config['client_id'];
+        $api_url = get_option('my_sso_validate_url');
+        $clientId = get_option('my_sso_client_id');
 
         appLogger(json_encode($credential));
         // Exchange code for token
@@ -143,10 +145,12 @@ class SSOGuard extends Adapter implements Guard
             return false;
         }
 
-        $response = wp_remote_post($this->config['validate_url'], [
+        $validateUrl = get_option('my_sso_validate_url');
+        $clientId = get_option('my_sso_client_id');
+        $response = wp_remote_post($validateUrl, [
             'body' => [
                 'grant_type' => 'refresh_token',
-                'client_id' => $this->config['client_id'],
+                'client_id' => $clientId,
                 'refresh_token' => $refreshToken,
             ],
         ]);
