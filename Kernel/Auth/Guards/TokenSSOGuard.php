@@ -145,9 +145,17 @@ class TokenSSOGuard extends Adapter implements Guard
             update_user_meta($user_id, 'sso_national_id', $body['nationalId']);
 
             $user = get_user_by('id', $user_id);
+
+            if(function_exists('yekta_audit_log')){
+                yekta_audit_log($user_id, 'created');
+            }
         }
 
         $this->login($user);
+
+        if(function_exists('yekta_audit_log')){
+            yekta_audit_log($user->ID, 'login');
+        }
         $this->getUserInfo($user);
 
         return $user;
