@@ -13,6 +13,14 @@
                     </select>
                 </td>
             </tr>
+            <tr valign="top">
+                <th scope="row">پارامتر ورود</th>
+                <td><input type="text" name="yekta_sso_login_param" value="<?php echo esc_attr(get_option('yekta_sso_login_param', 'login')); ?>" style="width: 100%;" /></td>
+            </tr>
+            <tr valign="top">
+                <th scope="row">پارامتر کد بازگشت</th>
+                <td><input type="text" name="yekta_sso_code_param" value="<?php echo esc_attr(get_option('yekta_sso_code_param', 'code')); ?>" style="width: 100%;" /></td>
+            </tr>
             <tr valign="top" class="token-fields">
                 <th scope="row">شناسه کلاینت</th>
                 <td><input type="text" name="yekta_sso_token_guard_client_id" value="<?php echo esc_attr(get_option('yekta_sso_token_guard_client_id')); ?>" style="width: 100%;" /></td>
