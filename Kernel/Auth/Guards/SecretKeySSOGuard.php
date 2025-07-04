@@ -9,7 +9,7 @@ class SecretKeySSOGuard extends Adapter implements Guard
 {
     public function getLoginUrl()
     {
-        return get_option('my_sso_redirect_url');
+        return $this->config['redirect_url'] ?? home_url();
     }
 
     public function check(): bool
@@ -25,7 +25,10 @@ class SecretKeySSOGuard extends Adapter implements Guard
         return false;
     }
 
-    public function user() {}
+    public function user() {
+        $user = wp_get_current_user();
+        return ($user && $user->ID) ? $user : null;
+    }
 
     public function login($user)
     {
@@ -40,14 +43,15 @@ class SecretKeySSOGuard extends Adapter implements Guard
             delete_user_meta($user->ID, 'sso_access_token');
             delete_user_meta($user->ID, 'sso_refresh_token');
             delete_user_meta($user->ID, 'sso_expires_at');
+            $this->revokeToken($user);
         }
         wp_logout();
     }
 
     public function attempt(array $credential)
     {
-        $apiUrl = get_option('my_sso_token_endpoint');
-        $secret = get_option('my_sso_secret_key');
+        $apiUrl = $this->config['token_endpoint'] ?? '';
+        $secret = $this->config['secret_key'] ?? '';
 
         $response = wp_remote_post($apiUrl, [
             'body' => [
@@ -108,6 +112,7 @@ class SecretKeySSOGuard extends Adapter implements Guard
         }
 
         $this->login($user);
+        $this->getUserInfo($user);
         return $user;
     }
 
@@ -118,10 +123,10 @@ class SecretKeySSOGuard extends Adapter implements Guard
             return false;
         }
 
-        $response = wp_remote_post(get_option('my_sso_token_endpoint'), [
+        $response = wp_remote_post($this->config['token_endpoint'] ?? '', [
             'body' => [
                 'grant_type' => 'refresh_token',
-                'client_secret' => get_option('my_sso_secret_key'),
+                'client_secret' => $this->config['secret_key'] ?? '',
                 'refresh_token' => $refreshToken,
             ],
         ]);
@@ -148,7 +153,48 @@ class SecretKeySSOGuard extends Adapter implements Guard
         if (count($parts) !== 3) {
             return null;
         }
-        $payload = base64_decode(strtr($parts[1], '-_', '+/'));
+
+        $header    = json_decode(base64_decode(strtr($parts[0], '-_', '+/')), true);
+        $payload   = base64_decode(strtr($parts[1], '-_', '+/'));
+        $signature = base64_decode(strtr($parts[2], '-_', '+/'));
+
+        if (!empty($this->config['public_key'])) {
+            $data  = $parts[0] . '.' . $parts[1];
+            $pub   = openssl_pkey_get_public($this->config['public_key']);
+            if (!$pub || openssl_verify($data, $signature, $pub, OPENSSL_ALGO_SHA256) !== 1) {
+                return null;
+            }
+        }
+
         return json_decode($payload, true);
+    }
+
+    public function getUserInfo($user)
+    {
+        $url = $this->config['user_info_url'] ?? '';
+        if (!$url) {
+            return null;
+        }
+        $token = get_user_meta($user->ID, 'sso_access_token', true);
+        $resp = wp_remote_get($url, [
+            'headers' => ['Authorization' => 'Bearer ' . $token],
+        ]);
+        if (is_wp_error($resp)) {
+            return null;
+        }
+        return json_decode(wp_remote_retrieve_body($resp), true);
+    }
+
+    public function revokeToken($user)
+    {
+        $logoutUrl = $this->config['logout_url'] ?? '';
+        if (!$logoutUrl) {
+            return;
+        }
+        $token = get_user_meta($user->ID, 'sso_refresh_token', true);
+        if (!$token) {
+            return;
+        }
+        wp_remote_post($logoutUrl, ['body' => ['token' => $token]]);
     }
 }

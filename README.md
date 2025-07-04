@@ -16,9 +16,15 @@ It provides a token-based login adapter and a simple admin interface for configu
 
 After activation a new **SSO Settings** page appears under **Settings**. Fill in the following fields:
 
-1. **Token Endpoint URL** – the URL used to exchange the authorization code for access tokens.
-2. **Secret Key** – the client secret for your SSO provider.
-3. **Redirect URL (after login)** – where users should be redirected once authenticated.
+1. **Client ID** – OAuth client identifier.
+2. **Login URL** – authorization endpoint of the SSO provider.
+3. **Validate URL** – endpoint used to exchange the authorization code for tokens.
+4. **Token Endpoint URL** – password or client credentials token endpoint.
+5. **Secret Key** – the client secret for your SSO provider.
+6. **Redirect URL** – where users should be redirected once authenticated.
+7. **Logout URL** – optional single logout endpoint.
+8. **Public Key** – RSA public key used to verify JWT signatures.
+9. **User Info URL** – endpoint returning additional profile information.
 
 Save the changes to update the stored options.
 
@@ -32,10 +38,12 @@ return [
         'default' => 'sso',
         'contexts' => [
             'sso' => [
-                'context' => Kernel\Auth\Guards\SSOGuard::class,
-                'login_url' => 'https://tauth.platform.donap.ir/realms/donap/protocol/openid-connect/auth?client_id={clientId}&response_type=code',
-                'client_id' => 'market',
-                'validate_url' => 'https://tauth.platform.donap.ir/realms/donap/protocol/openid-connect/token'
+                'context'       => Kernel\Auth\Guards\TokenSSOGuard::class,
+                'login_url'     => get_option('my_sso_login_url'),
+                'client_id'     => get_option('my_sso_client_id'),
+                'validate_url'  => get_option('my_sso_validate_url'),
+                'redirect_url'  => get_option('my_sso_redirect_url'),
+                'public_key'    => get_option('my_sso_public_key'),
             ]
         ]
     ],
@@ -46,10 +54,11 @@ To introduce another SSO provider, add a new context to the `contexts` array and
 
 ```php
 'another' => [
-    'context'     => Kernel\Auth\Guards\SSOGuard::class,
-    'login_url'   => 'https://example.com/auth?client_id={clientId}&response_type=code',
-    'client_id'   => 'my-client',
-    'validate_url'=> 'https://example.com/token',
+    'context'       => Kernel\Auth\Guards\TokenSSOGuard::class,
+    'login_url'     => get_option('another_login_url'),
+    'client_id'     => get_option('another_client_id'),
+    'validate_url'  => get_option('another_validate_url'),
+    'redirect_url'  => get_option('another_redirect_url'),
 ],
 ```
 
