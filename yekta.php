@@ -29,7 +29,29 @@ register_activation_hook(__FILE__, function () {
 });
 add_action('plugins_loaded', function () {});
 
+
+// $rtlLicenseClassName  = 'RTL_License_42dba671b448add4';
+// $rtlLicenseFilePath   = __DIR__ . DIRECTORY_SEPARATOR . $rtlLicenseClassName . '.php';
+// $rtlLicenseFileHash   = @sha1_file($rtlLicenseFilePath);
+// if ( $rtlLicenseFileHash === 'a87c8d293cd73dcb58efb4e6be7ca174a4f10456' && file_exists($rtlLicenseFilePath) ) {
+// 	require_once $rtlLicenseFilePath;
+
+// 	if ( class_exists($rtlLicenseClassName) && method_exists($rtlLicenseClassName, 'isActive') ) {
+// 		$rtlLicenseClass = new $rtlLicenseClassName();
+
+// 		if ( $rtlLicenseClass->{'isActive'}() === true ) {
+// 			add_action('init', function () {
+//                 (new RouteServiceProvider())->boot();
+//                 (new AppServiceProvider())->boot();
+//                 (new SSOServiceProvider())->boot();
+//                 (new PanelServiceProvider())->boot();
+//             });
+// 		}
+// 	}
+// }
+
 add_action('init', function () {
+
     (new RouteServiceProvider())->boot();
     (new AppServiceProvider())->boot();
     (new SSOServiceProvider())->boot();
