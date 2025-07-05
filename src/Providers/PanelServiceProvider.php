@@ -33,6 +33,7 @@ class PanelServiceProvider
                 );
         });
         Wordpress::action('admin_init',function(){
+            register_setting('yekta_sso_options_group', 'yekta_sso_service_type', ['sanitize_callback' => 'sanitize_text_field']);
             register_setting('yekta_sso_options_group', 'yekta_sso_method', ['sanitize_callback' => 'sanitize_text_field']);
             register_setting('yekta_sso_options_group', 'yekta_sso_login_param', ['sanitize_callback' => 'sanitize_text_field']);
             register_setting('yekta_sso_options_group', 'yekta_sso_code_param', ['sanitize_callback' => 'sanitize_text_field']);
@@ -45,19 +46,6 @@ class PanelServiceProvider
             register_setting('yekta_sso_options_group', 'yekta_sso_token_guard_public_key');
             register_setting('yekta_sso_options_group', 'yekta_sso_token_guard_userinfo_url', ['sanitize_callback' => 'esc_url_raw']);
 
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_token_endpoint', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_secret_key', ['sanitize_callback' => 'sanitize_text_field']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_redirect_url', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_logout_url', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_public_key');
-            register_setting('yekta_sso_options_group', 'yekta_sso_password_guard_userinfo_url', ['sanitize_callback' => 'esc_url_raw']);
-
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_token_endpoint', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_secret_key', ['sanitize_callback' => 'sanitize_text_field']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_redirect_url', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_logout_url', ['sanitize_callback' => 'esc_url_raw']);
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_public_key');
-            register_setting('yekta_sso_options_group', 'yekta_sso_secret_guard_userinfo_url', ['sanitize_callback' => 'esc_url_raw']);
         });
 
         Wordpress::action('wp_ajax_yekta_get_user_info', function(){
@@ -73,6 +61,34 @@ class PanelServiceProvider
             }
             $info = $guard->getUserInfo($user);
             wp_send_json($info);
+        });
+
+        Wordpress::action('admin_post_yekta_manage_origins', function(){
+            if(!current_user_can('manage_options')){
+                wp_die('forbidden');
+            }
+            check_admin_referer('yekta_manage_origins');
+            global $wpdb;
+            $table = $wpdb->prefix . 'yekta_allowed_origins';
+            $ids = $_POST['id'] ?? [];
+            $ips = $_POST['ip'] ?? [];
+            $clients = $_POST['client_id'] ?? [];
+            $redirects = $_POST['redirect_url'] ?? [];
+            foreach($clients as $i => $client){
+                $id = intval($ids[$i]);
+                $data = [
+                    'ip' => sanitize_text_field($ips[$i] ?? ''),
+                    'client_id' => sanitize_text_field($client),
+                    'redirect_url' => esc_url_raw($redirects[$i] ?? '')
+                ];
+                if($id){
+                    $wpdb->update($table, $data, ['id' => $id]);
+                }else if($client){
+                    $wpdb->insert($table, array_merge($data,['created_at'=>current_time('mysql')]));
+                }
+            }
+            wp_redirect(admin_url('admin.php?page=yekta-sso-settings&updated=1'));
+            exit;
         });
     }
 }
