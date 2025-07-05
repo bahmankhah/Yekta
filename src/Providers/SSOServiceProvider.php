@@ -21,30 +21,17 @@ class SSOServiceProvider
 
     public function boot()
     {
-        $method     = get_option('yekta_sso_method', appConfig('adapters.auth.default', 'token'));
+        if(get_option('yekta_sso_service_type', 'client') === 'auth'){
+            return;
+        }
+        $method     = 'token';
         $loginParam = get_option('yekta_sso_login_param', 'login');
         $codeParam  = get_option('yekta_sso_code_param', 'code');
         $guard      = call_user_func([Auth::class, $method]);
 
         if (isset($_GET[$loginParam]) && $_GET[$loginParam] === 'true' && !is_user_logged_in()) {
-            if ($method === 'password') {
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $guard->attempt([
-                        'username' => $_POST['username'] ?? '',
-                        'password' => $_POST['password'] ?? '',
-                    ]);
-                    $this->remove_code_param_redirect($codeParam, $loginParam);
-                } else {
-                    echo '<form method="post"><input type="text" name="username" placeholder="Username" /><input type="password" name="password" placeholder="Password" /><button type="submit">Login</button></form>';
-                    exit;
-                }
-            } elseif ($method === 'secret') {
-                $guard->attempt([]);
-                $this->remove_code_param_redirect($codeParam, $loginParam);
-            } else {
-                wp_redirect($guard->getLoginUrl());
-                exit;
-            }
+            wp_redirect($guard->getLoginUrl());
+            exit;
         }
         if (isset($_GET[$codeParam])) {
             $guard->attempt([
